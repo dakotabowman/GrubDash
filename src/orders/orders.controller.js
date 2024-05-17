@@ -63,7 +63,7 @@ function create(req, res) {
     deliverTo,
     mobileNumber,
     status,
-    dishes: dishes.map(dish => ({
+    dishes: dishes.map((dish) => ({
       id: nextId(),
       name: dish.name,
       description: dish.description,
@@ -76,6 +76,23 @@ function create(req, res) {
   res.status(201).json({ data: newOrder });
 }
 
+function orderExists(req, res, next) {
+  const { orderId } = req.params;
+  const foundOrder = orders.find((order) => order.id === orderId);
+  if (foundOrder) {
+    res.locals.order = foundOrder;
+    return next();
+  }
+  next({
+    status: 404,
+    message: `Order not found ${orderId}`,
+  });
+}
+
+function read(req, res) {
+    res.json({ data: res.locals.order });
+}
+
 module.exports = {
   list,
   create: [
@@ -85,4 +102,5 @@ module.exports = {
     dishesArrayIsValid,
     create,
   ],
+  read: [orderExists, read],
 };
