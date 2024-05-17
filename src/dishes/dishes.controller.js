@@ -26,13 +26,14 @@ function bodyDataHas(propertyName) {
 }
 
 function priceProperty(req, res, next) {
-  const { data: { price }  = {} } = req.body;
+  const { data: { price } = {} } = req.body;
   if (!Number.isInteger(price) || price < 0) {
     next({
       status: 400,
-      message: `Dish must have a price that is an integer greater than 0`
-    })
-  } next()
+      message: `Dish must have a price that is an integer greater than 0`,
+    });
+  }
+  next();
 }
 
 function create(req, res) {
@@ -53,16 +54,16 @@ function dishExists(req, res, next) {
   const foundDish = dishes.find((dish) => dish.id === dishId);
   if (foundDish) {
     res.locals.dish = foundDish;
-    return next()
+    return next();
   }
   next({
     status: 404,
-    message: `Dish not found: ${dishId}`
-  })
+    message: `Dish not found: ${dishId}`,
+  });
 }
 
 function read(req, res) {
-  res.json({ data: res.locals.dish})
+  res.json({ data: res.locals.dish });
 }
 
 function update(req, res) {
@@ -74,7 +75,7 @@ function update(req, res) {
   dish.price = price;
   dish.image_url = image_url;
 
-  res.json({ data: res.locals.dish })
+  res.json({ data: res.locals.dish });
 }
 
 module.exports = {
