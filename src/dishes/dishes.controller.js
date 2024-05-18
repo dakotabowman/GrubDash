@@ -66,6 +66,20 @@ function read(req, res) {
   res.json({ data: res.locals.dish });
 }
 
+function idIsValid(req, res, next) {
+  const { dishId } = req.params;
+  const { data: { id: bodyId } = {} } = req.body;
+
+  if (bodyId && bodyId !== dishId) {
+    return next({
+      status: 400,
+      message: `Dish id does not match route id. Dish: ${bodyId}, Route: ${dishId}`,
+    });
+  }
+
+  next();
+}
+
 function update(req, res) {
   const dish = res.locals.dish;
   const { data: { name, description, price, image_url } = {} } = req.body;
@@ -96,6 +110,7 @@ module.exports = {
     bodyDataHas("price"),
     bodyDataHas("image_url"),
     priceProperty,
+    idIsValid,
     update,
   ],
 };
