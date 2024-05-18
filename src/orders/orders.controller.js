@@ -90,17 +90,100 @@ function orderExists(req, res, next) {
 }
 
 function read(req, res) {
-    res.json({ data: res.locals.order });
+  res.json({ data: res.locals.order });
 }
+
+function statusIsValid(req, res, next) {
+  const { data: { status } = {} } = req.body;
+  if (status === "delivered") {
+    next({
+      status: 400,
+      message: `A delivered order cannot be changed`,
+    });
+  } else if (
+    status !== "pending" &&
+    status !== "preparing" &&
+    status !== "out-for-delivery" &&
+    status !== "delivered"
+  ) {
+    next({
+      status: 400,
+      message: ` 	Order must have a status of pending, preparing, out-for-delivery, delivered`,
+    });
+  }
+
+  next();
+}
+
+function idIsValid(req, res, next) {
+  const { orderId } = req.params;
+  const { data: { id: bodyId } = {} } = req.body;
+
+  if (bodyId && bodyId !== orderId) {
+    return next({
+      status: 400,
+      message: `Order id does not match route id. Order: ${bodyId}, Route: ${orderId}`,
+    });
+  }
+
+  next();
+}
+
+function update(req, res) {
+  const { orderId } = req.params;
+  const { data: { deliverTo, mobileNumber, status, dishes } = {} } = req.body;
+
+  const existingOrder = orders.find((order) => order.id === orderId);
+
+  existingOrder.deliverTo = deliverTo;
+  existingOrder.mobileNumber = mobileNumber;
+  existingOrder.status = status;
+  existingOrder.dishes = dishes.map((dish) => ({
+    id: dish.id || nextId(),
+    name: dish.name,
+    description: dish.description,
+    image_url: dish.image_url,
+    price: dish.price,
+    quantity: dish.quantity,
+  }));
+
+  res.json({ data: existingOrder });
+}
+
+function destroy(req, res, next) {
+  const { orderId } = req.params;
+  const index = orders.findIndex((order) => order.id === orderId);
+
+  const { status } = orders[index];
+  if (status !== "pending") {
+    return next({
+      status: 400,
+      message: `Order status must be pending`,
+    });
+  }
+  orders.splice(index, 1);
+  res.sendStatus(204);
+}
+
 
 module.exports = {
   list,
   create: [
     bodyDataHas("deliverTo"),
     bodyDataHas("mobileNumber"),
-    bodyDataHas("status"),
     dishesArrayIsValid,
     create,
   ],
   read: [orderExists, read],
+  update: [
+    orderExists,
+    bodyDataHas("deliverTo"),
+    bodyDataHas("mobileNumber"),
+    bodyDataHas("status"),
+    dishesArrayIsValid,
+    statusIsValid,
+    idIsValid,
+    update,
+  ],
+  delete: [orderExists, destroy],
 };
